@@ -8,6 +8,7 @@ import {
     User
 } from 'firebase/auth';
 import firebaseService from "../firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const firebaseAuth = firebaseService.getAuth();
 
@@ -35,4 +36,5 @@ export async function sendVerificationEmail(user: any) {
 
 export async function logout() {
     await firebaseSignOut(firebaseAuth);
+    await AsyncStorage.removeItem('user');
 }

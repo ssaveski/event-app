@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, Alert, ScrollView, Modal, TouchableOpacity } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import EventItem from '../components/events/EventItem';
@@ -8,13 +8,14 @@ import EventForm from "../components/events/EventForm";
 import { isSameDay, format } from 'date-fns';
 import HourBlocks from "../components/events/HourBlocks";
 import AddEventFabButton from "../components/events/AddEventFabButton";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DashboardScreen = () => {
     const [events, setEvents] = useState<any[]>([]);
     const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [markedDates, setMarkedDates] = useState({});
-    const [selectedCalendarDates, setSelectedCalendarDates] = useState({});
+    const [selectedDate, setSelectedDate] = useState<string>('');
+    const [markedDates, setMarkedDates] = useState<any>({});
+    const [selectedCalendarDates, setSelectedCalendarDates] = useState<any>({});
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [currentEvent, setCurrentEvent] = useState<any>(null);
     const { user } = useContext(AuthContext);
@@ -22,56 +23,87 @@ const DashboardScreen = () => {
     const [loadingForm, setLoadingForm] = useState(false);
 
     useEffect(() => {
-        let unsubscribe;
+        loadEventsFromStorage();
+    }, []);
 
+    useEffect(() => {
         if (user?.uid) {
-            unsubscribe = subscribeToEvents(user.uid, (newEvents) => {
-                setEvents(newEvents);
-                const dates = newEvents.reduce((acc, event) => {
-                    const date = format(event.start.dateTime, 'yyyy-MM-dd');
-                    acc[date] = { marked: true };
-                    return acc;
-                }, {});
-                setMarkedDates(dates);
-
-                setLoadingCalendar(false);
-            });
-        } else {
-            setEvents([]);
-            setMarkedDates({});
+            const unsubscribe = subscribeToEvents(user.uid, handleEventsUpdate);
+            return () => {
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+            };
         }
-
-        return () => {
-            if (unsubscribe) {
-                unsubscribe();
-            }
-        };
     }, [user?.uid]);
 
     useEffect(() => {
+        updateSelectedCalendarDates();
+    }, [selectedDate]);
+
+    useEffect(() => {
+        filterEventsByDate();
+    }, [selectedDate, events]);
+
+    const loadEventsFromStorage = async () => {
+        try {
+            const storedEvents = await AsyncStorage.getItem('events');
+            if (storedEvents) {
+                const parsedEvents = JSON.parse(storedEvents);
+                setEvents(parsedEvents);
+                setMarkedDates(generateMarkedDates(parsedEvents));
+            }
+            setLoadingCalendar(false);
+        } catch (error) {
+            console.error('Failed to load events from AsyncStorage', error);
+            setLoadingCalendar(false);
+        }
+    };
+
+    const handleEventsUpdate = (newEvents: any[]) => {
+        setEvents(newEvents);
+        setMarkedDates(generateMarkedDates(newEvents));
+        saveEventsToStorage(newEvents);
+        setLoadingCalendar(false);
+    };
+
+    const generateMarkedDates = (events: any[]) => {
+        return events.reduce((acc, event) => {
+            const date = format(new Date(event.start.dateTime), 'yyyy-MM-dd');
+            acc[date] = { marked: true };
+            return acc;
+        }, {});
+    };
+
+    const saveEventsToStorage = async (events: any[]) => {
+        try {
+            await AsyncStorage.setItem('events', JSON.stringify(events));
+        } catch (error) {
+            console.error('Failed to save events to AsyncStorage', error);
+        }
+    };
+
+    const updateSelectedCalendarDates = () => {
         if (selectedDate) {
             setSelectedCalendarDates({
                 [selectedDate]: { selected: true, selectedColor: 'blue' },
             });
         }
-    }, [selectedDate]);
+    };
 
-    useEffect(() => {
+    const filterEventsByDate = () => {
         if (!selectedDate) {
-            return setFilteredEvents([]);
+            setFilteredEvents([]);
         } else {
-            const filtered = events.filter(e => checkTime(e.start.dateTime, new Date(selectedDate)));
+            const filtered = events.filter(e => checkTime(new Date(e.start.dateTime), new Date(selectedDate)));
             setFilteredEvents(filtered);
         }
-    }, [selectedDate, events]);
+    };
 
-    const handleDayPress = (day) => {
-        setSelectedDate((prevDate) => {
-            if (prevDate === day.dateString) {
-                return '';
-            }
-            return day.dateString;
-        });
+    const checkTime = (startDate: Date, endDate: Date) => isSameDay(startDate, endDate);
+
+    const handleDayPress = (day: any) => {
+        setSelectedDate(prevDate => prevDate === day.dateString ? '' : day.dateString);
     };
 
     const handleAddEvent = () => {
@@ -79,7 +111,7 @@ const DashboardScreen = () => {
         setIsModalVisible(true);
     };
 
-    const handleEditEvent = (event) => {
+    const handleEditEvent = (event: any) => {
         setCurrentEvent({
             ...event,
             startDateTime: event.start.dateTime,
@@ -92,42 +124,26 @@ const DashboardScreen = () => {
         setIsModalVisible(false);
     };
 
-    const handleFormSubmit = async (formData) => {
-        if (!user) {
-            return;
-        }
+    const handleFormSubmit = async (formData: any) => {
+        if (!user) return;
 
         try {
             setLoadingForm(true);
-            if (currentEvent) {
-                const updatedEvent = {
-                    id: currentEvent.id,
-                    userId: currentEvent.userId,
-                    title: formData.title,
-                    start: {
-                        dateTime: formData.startDateTime,
-                    },
-                    end: {
-                        dateTime: formData.endDateTime,
-                    },
-                };
-                await updateEvent(updatedEvent);
-                Alert.alert('Event updated', `Event updated successfully!`);
-            } else {
-                const newEvent = {
-                    userId: user.uid,
-                    title: formData.title,
-                    start: {
-                        dateTime: formData.startDateTime,
-                    },
-                    end: {
-                        dateTime: formData.endDateTime,
-                    },
-                };
+            const eventData = {
+                userId: user.uid,
+                title: formData.title,
+                start: { dateTime: formData.startDateTime },
+                end: { dateTime: formData.endDateTime },
+            };
 
-                await addEvent(newEvent);
-                Alert.alert('Event added', `Event added successfully!`);
+            if (currentEvent) {
+                await updateEvent({ ...eventData, id: currentEvent.id });
+                Alert.alert('Event updated', 'Event updated successfully!');
+            } else {
+                await addEvent(eventData);
+                Alert.alert('Event added', 'Event added successfully!');
             }
+
             setIsModalVisible(false);
         } catch (error) {
             Alert.alert('Error', `Failed to ${currentEvent ? 'update' : 'add'} event. Please try again.`);
@@ -137,15 +153,13 @@ const DashboardScreen = () => {
     };
 
     const renderEventCards = () => {
-        return filteredEvents.map(event => {
-            return (
-                <EventItem
-                    key={event.id}
-                    event={event}
-                    onEdit={handleEditEvent}
-                />
-            );
-        });
+        return filteredEvents.map(event => (
+            <EventItem
+                key={event.id}
+                event={event}
+                onEdit={handleEditEvent}
+            />
+        ));
     };
 
     return (
@@ -153,7 +167,7 @@ const DashboardScreen = () => {
             <Calendar
                 displayLoadingIndicator={loadingCalendar}
                 onDayPress={handleDayPress}
-                markedDates={{...markedDates, ...selectedCalendarDates}}
+                markedDates={{ ...markedDates, ...selectedCalendarDates }}
             />
             <ScrollView style={styles.scheduleContainer}>
                 <HourBlocks />
@@ -183,10 +197,6 @@ const DashboardScreen = () => {
         </View>
     );
 };
-
-const checkTime = (startDate: Date, endDate: Date): boolean => {
-    return isSameDay(startDate, endDate);
-}
 
 const styles = StyleSheet.create({
     container: {
@@ -220,7 +230,6 @@ const styles = StyleSheet.create({
         color: '#000',
         fontSize: 16,
     },
-
 });
 
 export default DashboardScreen;
