@@ -50,25 +50,24 @@ export async function saveUserIsSyncedToFirestore(userId: string, data: { [key: 
     const userDocRef = doc(firebaseDb, 'users', userId);
 
     const docSnapshot = await getDoc(userDocRef);
-
     if (!docSnapshot.exists()) {
         await setDoc(userDocRef, data);
     } else {
-        await updateDoc(userDocRef, {
-            ...userDocRef,
-            ...data
-        });
+        await updateDoc(userDocRef, data);
     }
 }
 
-export async function logout() {
-    await saveUserIsSyncedToFirestore(firebaseAuth.currentUser.uid, { isSyncedWithGoogle: false });
-    await firebaseSignOut(firebaseAuth);
+export async function logout(isSyncedWithGoogle) {
+    if (isSyncedWithGoogle) {
+        await saveUserIsSyncedToFirestore(firebaseAuth.currentUser.uid, { isSyncedWithGoogle: false });
+        await GoogleSignin.revokeAccess();
+        await GoogleSignin.signOut();
+    }
+
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('events');
+    await firebaseSignOut(firebaseAuth);
 
-    await GoogleSignin.revokeAccess();
-    await GoogleSignin.signOut();
 }
 
 

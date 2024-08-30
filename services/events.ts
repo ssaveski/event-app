@@ -1,7 +1,18 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, QuerySnapshot, DocumentData } from 'firebase/firestore';
+import {
+    collection,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    doc,
+    onSnapshot,
+    query,
+    where,
+    QuerySnapshot,
+    DocumentData
+} from 'firebase/firestore';
 import firebaseService from "../firebaseConfig";
-import { Timestamp } from 'firebase/firestore';
-import { addGoogleCalendarEvent, deleteGoogleCalendarEvent, updateGoogleCalendarEvent } from "./googleCalendar";
+import {Timestamp} from 'firebase/firestore';
+import {addGoogleCalendarEvent, deleteGoogleCalendarEvent, updateGoogleCalendarEvent} from "./googleCalendar";
 
 const firebaseDb = firebaseService.getDB();
 const eventsRef = collection(firebaseDb, 'events');
@@ -23,12 +34,10 @@ export interface Event {
 async function handleGoogleCalendarEvent(event: Event | Omit<Event, 'id'>, operation: 'add' | 'update' | 'delete', isSyncedGoogle) {
     if (!isSyncedGoogle) return;
 
+
     switch (operation) {
         case 'add':
-            if (event.isGoogleCalendarEvent) {
-                event.googleCalendarEventId = await addGoogleCalendarEvent(event);
-            }
-            break;
+            return await addGoogleCalendarEvent(event);
         case 'update':
             if (event.googleCalendarEventId) {
                 await updateGoogleCalendarEvent(event as Event);
@@ -47,9 +56,10 @@ async function handleGoogleCalendarEvent(event: Event | Omit<Event, 'id'>, opera
 export async function addEvent(event: Omit<Event, 'id'>, isSyncedGoogle: boolean) {
     let googleCalendarEventId = null;
     if (isSyncedGoogle) {
-       googleCalendarEventId = await handleGoogleCalendarEvent(event, 'add', isSyncedGoogle);
+        googleCalendarEventId = await handleGoogleCalendarEvent(event, 'add', isSyncedGoogle);
     }
-    return addDoc(eventsRef, {...event, googleCalendarEventId});
+
+    return addDoc(eventsRef, {...event, googleCalendarEventId: googleCalendarEventId || null});
 }
 
 export async function updateEvent(event: Event, isSyncedGoogle: boolean) {

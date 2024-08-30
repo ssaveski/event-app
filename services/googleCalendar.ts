@@ -97,9 +97,9 @@ async function getGoogleAccessToken(): Promise<string> {
     return accessToken;
 }
 
-export async function addGoogleCalendarEvent(event: Omit<FirestoreEvent, 'id'>): Promise<Response> {
+export async function addGoogleCalendarEvent(event: Omit<FirestoreEvent, 'id'>) {
     const accessToken = await getGoogleAccessToken();
-    return await fetch(
+    const response = await fetch(
         'https://www.googleapis.com/calendar/v3/calendars/primary/events',
         {
             method: 'POST',
@@ -120,6 +120,11 @@ export async function addGoogleCalendarEvent(event: Omit<FirestoreEvent, 'id'>):
             }),
         }
     );
+
+
+
+    const data = await response.json();
+    return data.id;
 }
 
 export async function updateGoogleCalendarEvent(event: FirestoreEvent): Promise<Response> {

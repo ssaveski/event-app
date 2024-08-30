@@ -1,14 +1,17 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import React from "react";
+import React, {useContext} from "react";
 import { Button } from "react-native";
 import ProfileScreen from "../screens/ProfileScreen";
 import { logout } from "../services/auth";
 import DashboardScreen from "../screens/DashboardScreen";
 import GoogleCalendarSyncButton from "../components/events/GoogleCalendarSyncButton";
+import {AuthContext} from "../store/auth-context";
 
 const Stack = createNativeStackNavigator();
 
 function AuthenticatedStack() {
+    const { isSyncedGoogle } = useContext(AuthContext);
+
     return (
         <Stack.Navigator>
             <Stack.Screen
@@ -39,7 +42,7 @@ function AuthenticatedStack() {
                     headerRight: () => (
                         <Button
                             onPress={async () => {
-                                await logout();
+                                await logout(isSyncedGoogle);
                                 navigation.navigate("Login");
                             }}
                             title="Logout"

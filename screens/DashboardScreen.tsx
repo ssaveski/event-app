@@ -18,7 +18,7 @@ const DashboardScreen = () => {
     const [selectedCalendarDates, setSelectedCalendarDates] = useState<any>({});
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [currentEvent, setCurrentEvent] = useState<any>(null);
-    const { user, isSyncedGoogle } = useContext(AuthContext);
+    const { user, isSyncedGoogle, setOperationInProgress } = useContext(AuthContext);
     const [loadingCalendar, setLoadingCalendar] = useState(true);
     const [loadingForm, setLoadingForm] = useState(false);
 
@@ -50,7 +50,6 @@ const DashboardScreen = () => {
             const storedEvents = await AsyncStorage.getItem('events');
             if (storedEvents) {
                 const parsedEvents = JSON.parse(storedEvents);
-                console.log(storedEvents);
                 setEvents(parsedEvents);
                 setMarkedDates(generateMarkedDates(parsedEvents));
             }
@@ -129,6 +128,7 @@ const DashboardScreen = () => {
         if (!user) return;
 
         try {
+            setOperationInProgress(true);
             setLoadingForm(true);
             const eventData = {
                 userId: user.uid,
@@ -150,6 +150,7 @@ const DashboardScreen = () => {
             Alert.alert('Error', `Failed to ${currentEvent ? 'update' : 'add'} event. Please try again.`);
         } finally {
             setLoadingForm(false);
+            setOperationInProgress(false);
         }
     };
 

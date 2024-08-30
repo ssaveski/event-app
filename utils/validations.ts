@@ -7,14 +7,16 @@ export interface ValidationRule {
 
 export type ValidationRules = ValidationRule[];
 
-export const isNumeric = (value: string) => !isNaN(Number(value)) && isFinite(Number(value));
+export const isMin = (value: number,  min: number) => Number(value) >= min;
 
-export const isMin = (min: number) => (value: string) => Number(value) >= min;
-
-export const isMax = (max: number) => (value: string) => Number(value) <= max;
 
 export const isRequired = (value: any) => !!value;
 
 export const isDateAfter = (startDate: Date, endDate: Date) => {
     return isAfter(endDate, startDate);
+};
+
+export const isEmail = (value: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(value);
 };

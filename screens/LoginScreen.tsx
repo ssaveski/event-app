@@ -1,14 +1,23 @@
-import React, { useState, useEffect, useCallback, FC } from 'react';
-import { View, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
+import React, {useState, useEffect, useCallback, FC} from 'react';
+import {
+    View,
+    StyleSheet,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    Keyboard,
+    TouchableWithoutFeedback,
+    Alert
+} from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { MaterialIcons } from '@expo/vector-icons';
+import {MaterialIcons} from '@expo/vector-icons';
 import Title from '../components/ui/Title';
 import Button from '../components/ui/Button';
-import Input, { InputRef } from '../components/inputs/Input';
-import { isRequired } from "../utils/validations";
-import { useFormValidation } from "../components/inputs/useFormValidation";
-import { signIn, signUp } from "../services/auth";
+import Input, {InputRef} from '../components/inputs/Input';
+import {isEmail, isMin, isRequired} from "../utils/validations";
+import {useFormValidation} from "../components/inputs/useFormValidation";
+import {signIn, signUp} from "../services/auth";
 
 interface FormData {
     [key: string]: string;
@@ -20,7 +29,7 @@ const LoginScreen: FC = () => {
         password: '',
     });
     const [loading, setLoading] = useState(false);
-    const { register, isFormValid } = useFormValidation();
+    const {register, isFormValid} = useFormValidation();
 
     useEffect(() => {
         checkBiometricAuth();
@@ -81,7 +90,6 @@ const LoginScreen: FC = () => {
             await SecureStore.setItemAsync('userPassword', formData.password);
         } catch (error) {
             alert('Login failed');
-            console.log("Login failed", error.message);
         } finally {
             setLoading(false);
         }
@@ -124,7 +132,7 @@ const LoginScreen: FC = () => {
                 >
                     <Title>Event App</Title>
                     {loading ? (
-                        <ActivityIndicator size="large" color="#5568FE" />
+                        <ActivityIndicator size="large" color="#5568FE"/>
                     ) : (
                         <>
                             <Input
@@ -132,30 +140,42 @@ const LoginScreen: FC = () => {
                                 name="email"
                                 value={formData.email}
                                 onChangeText={handleInputChange}
-                                rules={[{
-                                    validate: isRequired,
-                                    message: 'Email is required'
-                                }]}
+                                rules={[
+                                    {
+                                        validate: isRequired,
+                                        message: 'Email is required'
+                                    },
+                                    {
+                                        validate: isEmail,
+                                        message: 'Add a valid email'
+                                    },
+                                ]}
                                 textProps={{
                                     placeholder: 'Email',
                                     autoCapitalize: 'none'
                                 }}
-                                icon={<MaterialIcons name='person' size={24} color='#333' />}
+                                icon={<MaterialIcons name='person' size={24} color='#333'/>}
                             />
                             <Input
                                 ref={(ref: InputRef) => register('password', ref)}
                                 name="password"
                                 value={formData.password}
                                 onChangeText={handleInputChange}
-                                rules={[{
-                                    validate: isRequired,
-                                    message: 'Password is required'
-                                }]}
+                                rules={[
+                                    {
+                                        validate: isRequired,
+                                        message: 'Password is required'
+                                    },
+                                    {
+                                        validate: (value) => isMin(value?.length, 6),
+                                        message: 'Password has to be min 6 characters'
+                                    },
+                                ]}
                                 textProps={{
                                     placeholder: 'Password',
                                     secureTextEntry: true
                                 }}
-                                icon={<MaterialIcons name='lock' size={24} color='#333' />}
+                                icon={<MaterialIcons name='lock' size={24} color='#333'/>}
                             />
                             <Button primary onPress={() => handleSubmit(true)}>
                                 Login

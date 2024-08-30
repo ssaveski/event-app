@@ -44,7 +44,6 @@ const DateTimePickerInput = forwardRef<DateTimePickerInputRef, DateTimePickerInp
     const handleChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
         const currentDate = selectedDate || dateTime;
         setDateTime(currentDate);
-        console.log(currentDate, selectedDate, dateTime);
         onChangeDate(name, currentDate);
 
         if (error) {

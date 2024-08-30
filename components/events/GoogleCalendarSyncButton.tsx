@@ -47,7 +47,7 @@ const GoogleCalendarSyncButton: FC = ({ }) => {
     return (
         <>
             {!isSyncedGoogle && !loadingIsSynced && (
-                <Button title={'Google'} onPress={connectGoogleCalendar} />
+                <Button title={'Sync Google'} onPress={connectGoogleCalendar} small/>
             )}
             {isSyncedGoogle && (
                 <View style={styles.connectedContainer}>

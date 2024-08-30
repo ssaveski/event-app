@@ -1,8 +1,9 @@
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, ViewStyle, Alert, ActivityIndicator} from 'react-native';
 import {deleteEvent, Event} from '../../services/events';
 import { format } from 'date-fns';
 import {MaterialIcons} from "@expo/vector-icons";
+import authContext, {AuthContext} from "../../store/auth-context";
 
 interface EventItemProps {
     event: Event;
@@ -10,20 +11,23 @@ interface EventItemProps {
     isSyncedGoogle: boolean;
 }
 
-const EventItem: React.FC<EventItemProps> = ({ event, onEdit, isSyncedGoogle }) => {
+const EventItem: React.FC<EventItemProps> = ({ event, onEdit }) => {
     const [loading, setLoading] = useState(false);
+    const {isSyncedGoogle, setOperationInProgress} = useContext(AuthContext);
     const handlePress = () => {
         onEdit(event);
     };
 
     const handleDelete = async () => {
         try {
+            setOperationInProgress(true);
             setLoading(true);
             await deleteEvent(event, isSyncedGoogle);
         } catch (e) {
             Alert.alert('Error', `Failed to delete event. Please try again.`);
         } finally {
             setLoading(false);
+            setOperationInProgress(false);
         }
     }
 
