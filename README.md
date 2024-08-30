@@ -50,6 +50,13 @@ works using dev-client start**
 
 4. **Tested on smaller devices with and without notches**
 
+5. **App video presentation - https://drive.google.com/file/d/1jAhj5wm9-KRSCXZwLWWk04ueONSNa1YA/view?usp=sharing**
+
+6. **There is also AppFlow.pdf doc explaining the app in short at the root of the project** 
+
+7. **To ease testing the Firebase credentials will be in the codebase itself for the next two weeks and 
+deprecated afterwards**
+
 ## Potential Improvements
 
 1. To enable Google Calendar Sync on Android we just need to android specific google cloud configuration. 
