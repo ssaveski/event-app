@@ -4,6 +4,7 @@ import { Button } from "react-native";
 import ProfileScreen from "../screens/ProfileScreen";
 import { logout } from "../services/auth";
 import DashboardScreen from "../screens/DashboardScreen";
+import GoogleCalendarSyncButton from "../components/events/GoogleCalendarSyncButton";
 
 const Stack = createNativeStackNavigator();
 
@@ -14,6 +15,7 @@ function AuthenticatedStack() {
                 name="Dashboard"
                 component={DashboardScreen}
                 options={({ navigation }) => ({
+                    headerLeft: () => <GoogleCalendarSyncButton />,
                     headerRight: () => (
                         <Button
                             onPress={() => navigation.navigate("Profile")}

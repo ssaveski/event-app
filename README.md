@@ -33,11 +33,13 @@ A React Native application using EXPO for managing events with Firebase integrat
    ```bash
    npm install
 
-## #Running the application
+## Running the application
 
-1. **Running the Application start the development server**
+1. **Running the Application start the development server - You need emulator XCode setup**
    ```bash
-   npm start
-   
-2. **Setup expo go** - https://expo.dev/go
+   npx expo run:ios
+
+2. **Or you can start it using expo go and it's app (npm start) but than you wont be able to use the functionality to 
+sync the Google Calendar as '@react-native-google-signin/google-signin' currently only
+works using dev-client start** 
 

@@ -7,9 +7,10 @@ import {MaterialIcons} from "@expo/vector-icons";
 interface EventItemProps {
     event: Event;
     onEdit: (event: Event) => void;
+    isSyncedGoogle: boolean;
 }
 
-const EventItem: React.FC<EventItemProps> = ({ event, onEdit }) => {
+const EventItem: React.FC<EventItemProps> = ({ event, onEdit, isSyncedGoogle }) => {
     const [loading, setLoading] = useState(false);
     const handlePress = () => {
         onEdit(event);
@@ -18,7 +19,7 @@ const EventItem: React.FC<EventItemProps> = ({ event, onEdit }) => {
     const handleDelete = async () => {
         try {
             setLoading(true);
-            await deleteEvent(event);
+            await deleteEvent(event, isSyncedGoogle);
         } catch (e) {
             Alert.alert('Error', `Failed to delete event. Please try again.`);
         } finally {

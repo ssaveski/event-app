@@ -18,7 +18,7 @@ const DashboardScreen = () => {
     const [selectedCalendarDates, setSelectedCalendarDates] = useState<any>({});
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [currentEvent, setCurrentEvent] = useState<any>(null);
-    const { user } = useContext(AuthContext);
+    const { user, isSyncedGoogle } = useContext(AuthContext);
     const [loadingCalendar, setLoadingCalendar] = useState(true);
     const [loadingForm, setLoadingForm] = useState(false);
 
@@ -50,6 +50,7 @@ const DashboardScreen = () => {
             const storedEvents = await AsyncStorage.getItem('events');
             if (storedEvents) {
                 const parsedEvents = JSON.parse(storedEvents);
+                console.log(storedEvents);
                 setEvents(parsedEvents);
                 setMarkedDates(generateMarkedDates(parsedEvents));
             }
@@ -137,10 +138,10 @@ const DashboardScreen = () => {
             };
 
             if (currentEvent) {
-                await updateEvent({ ...eventData, id: currentEvent.id });
+                await updateEvent({ ...currentEvent, ...eventData }, isSyncedGoogle);
                 Alert.alert('Event updated', 'Event updated successfully!');
             } else {
-                await addEvent(eventData);
+                await addEvent(eventData, isSyncedGoogle);
                 Alert.alert('Event added', 'Event added successfully!');
             }
 
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
     closeButtonText: {
         color: '#000',
         fontSize: 16,
-    },
+    }
 });
 
 export default DashboardScreen;

@@ -3,17 +3,26 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import firebaseService from '../firebaseConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { checkEmailVerification } from '../utils/checkEmailVerification';
+import {subscribeToUsers} from "../services/auth";
+import {
+    DocumentData,
+} from "firebase/firestore";
+import {syncGoogleCalendar} from "../services/googleCalendar";
 
 interface AuthContextType {
     user: User | null;
     loading: boolean;
     isEmailVerified: boolean;
+    isSyncedGoogle: boolean;
+    loadingIsSynced: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
-    isEmailVerified: false
+    loadingIsSynced: true,
+    isEmailVerified: false,
+    isSyncedGoogle: false
 });
 
 interface AuthContextProviderProps {
@@ -24,6 +33,9 @@ function AuthContextProvider({ children }: AuthContextProviderProps) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEmailVerified, setIsEmailVerified] = useState(false);
+    const [isSyncedGoogle, setIsSyncedGoogle] = useState(false);
+    const [loadingIsSynced, setLoadingIsSynced] = useState(true);
+
     const auth = firebaseService.getAuth();
 
     useEffect(() => {
@@ -40,14 +52,55 @@ function AuthContextProvider({ children }: AuthContextProviderProps) {
                 await AsyncStorage.removeItem('user');
             }
             setLoading(false);
-
-            checkEmailVerification(auth, (emailVerified) => {
-                setIsEmailVerified(emailVerified);
-            });
         });
 
         return () => unsubscribe();
     }, [auth]);
+
+
+    useEffect(() => {
+        if (user?.uid) {
+            const cleanup = checkEmailVerification(auth, (emailVerified) => {
+                setIsEmailVerified(emailVerified);
+            });
+
+            return cleanup;
+        }
+    }, [user?.uid]);
+
+    useEffect(() => {
+        if (user?.uid) {
+            const unsubscribe = subscribeToUsers(user.uid, (user) => setUserGoogleSync(user));
+
+            return () => {
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+            };
+        }
+    }, [user?.uid]);
+
+
+    useEffect(() => {
+        let syncInterval: number | undefined;
+        if (user?.uid && isSyncedGoogle) {
+            syncGoogleCalendar(user.uid);
+            syncInterval = setInterval(() => syncGoogleCalendar(user.uid), 5000);
+        }
+
+        return () => {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+            }
+        };
+    }, [user?.uid, isSyncedGoogle]);
+
+
+
+    const setUserGoogleSync = (user: DocumentData | undefined) => {
+        setIsSyncedGoogle(!!user?.isSyncedWithGoogle);
+        setLoadingIsSynced(false);
+    }
 
 
     const loadUserFromStorage = async () => {
@@ -61,7 +114,7 @@ function AuthContextProvider({ children }: AuthContextProviderProps) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, isEmailVerified }}>
+        <AuthContext.Provider value={{ user, loading, isEmailVerified, isSyncedGoogle, loadingIsSynced }}>
             {children}
         </AuthContext.Provider>
     );
